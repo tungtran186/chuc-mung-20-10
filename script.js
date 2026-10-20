@@ -38,7 +38,7 @@ const CONFIG = {
   // Số lượng cánh hoa rơi (Tự động thích ứng máy tính / điện thoại để mượt mà)
   petalsCount: {
     desktop: 36,
-    mobile: 18
+    mobile: 12
   },
 
   // Đường dẫn file nhạc nền (để file nhạc vào thư mục audio/music.mp3)
@@ -153,6 +153,11 @@ function applyPersonalizedData() {
  * - Canvas 1: Đốm sáng nền lấp lánh (Sparkles/Stars)
  * - Canvas 2: Cánh hoa hồng rơi lả tả (Falling Petals)
  * - Canvas 3: Vệt sáng chuột (Mouse Trail) & Pháo hoa nhỏ (Click Burst)
+ *
+ * Tối ưu cho điện thoại yếu:
+ * - Mỗi loại hạt được vẽ sẵn MỘT lần thành "sprite" (canvas phụ), mỗi khung hình chỉ drawImage.
+ *   Không dùng shadowBlur hay tạo gradient trong vòng lặp (rất nặng trên mobile).
+ * - Vòng lặp chỉ chạy sau khi chữ chính đã hiện xong (startEffects), hạt xuất hiện tăng dần.
  * ============================================================================== */
 
 // Kiểm tra chế độ giảm chuyển động của hệ điều hành
@@ -163,77 +168,149 @@ function isMobileDevice() {
   return window.innerWidth <= 768;
 }
 
-// Thiết lập kích thước Canvas theo màn hình (DPR giới hạn tối đa 2 để mượt)
+// Kích thước vùng vẽ (CSS px) và mật độ điểm ảnh (điện thoại tối đa 1.5, máy tính tối đa 2)
+const view = { w: window.innerWidth, h: window.innerHeight, dpr: 1 };
+
+function measureView() {
+  const box = document.querySelector('.canvas-container');
+  view.w = (box && box.clientWidth) || window.innerWidth;
+  view.h = (box && box.clientHeight) || window.innerHeight;
+  view.dpr = Math.min(window.devicePixelRatio || 1, isMobileDevice() ? 1.5 : 2);
+}
+
 function resizeCanvas(canvas) {
   if (!canvas) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = window.innerWidth * dpr;
-  canvas.height = window.innerHeight * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
+  canvas.width = Math.round(view.w * view.dpr);
+  canvas.height = Math.round(view.h * view.dpr);
+  canvas.getContext('2d').setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+}
+
+function hexToRgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+
+// Vẽ sẵn một hình lên canvas phụ kích thước w x h (CSS px)
+function makeSprite(w, h, draw) {
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(w * view.dpr);
+  c.height = Math.ceil(h * view.dpr);
+  const ctx = c.getContext('2d');
+  ctx.scale(view.dpr, view.dpr);
+  draw(ctx);
+  return c;
+}
+
+// Đốm sáng tròn có quầng (thay cho arc + shadowBlur). Lõi đặc chiếm 22% bán kính sprite.
+const GLOW_CORE = 0.11;
+function makeGlowSprite(color) {
+  const S = 32;
+  return makeSprite(S, S, ctx => {
+    const g = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+    g.addColorStop(0, color);
+    g.addColorStop(GLOW_CORE * 2, color);
+    g.addColorStop(0.4, hexToRgba(color, 0.3));
+    g.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, S, S);
+  });
+}
+
+// Trái tim nhỏ có quầng sáng (shadowBlur chỉ chạy một lần lúc vẽ sẵn)
+const HEART_S = 10, HEART_PAD = 7;
+function makeHeartSprite(color) {
+  const s = HEART_S, w = s * 2.2 + HEART_PAD * 2, h = s * 2 + HEART_PAD * 2;
+  return makeSprite(w, h, ctx => {
+    ctx.translate(w / 2, HEART_PAD + s * 0.8);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(-s, -s, -s * 1.4, s / 2, 0, s * 1.2);
+    ctx.bezierCurveTo(s * 1.4, s / 2, s, -s, 0, 0);
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 6;
+    ctx.fill();
+  });
+}
+
+// Cánh hoa (gradient + bóng mờ vẽ sẵn). Gốc cánh hoa nằm ở (W/2, H - PAD) của sprite.
+const PETAL_S = 20, PETAL_PAD = 6;
+const PETAL_W = PETAL_S + PETAL_PAD * 2, PETAL_H = PETAL_S * 1.4 + PETAL_PAD * 2;
+const PETAL_TONES = [
+  { r: 255, g: 182, b: 193 }, // Light pink
+  { r: 255, g: 192, b: 203 }, // Pink
+  { r: 255, g: 213, b: 220 }, // Blush
+  { r: 255, g: 160, b: 175 }  // Coral pink
+];
+function makePetalSprite(c) {
+  const s = PETAL_S;
+  return makeSprite(PETAL_W, PETAL_H, ctx => {
+    ctx.translate(PETAL_W / 2, PETAL_H - PETAL_PAD);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(-s / 2, -s / 2, -s / 2, -s * 1.2, 0, -s * 1.4);
+    ctx.bezierCurveTo(s / 2, -s * 1.2, s / 2, -s / 2, 0, 0);
+    const grad = ctx.createLinearGradient(0, 0, 0, -s * 1.4);
+    grad.addColorStop(0, `rgba(${c.r}, ${c.g}, ${c.b}, 0.95)`);
+    grad.addColorStop(0.6, 'rgba(255, 230, 235, 0.9)');
+    grad.addColorStop(1, 'rgba(255, 250, 252, 1)');
+    ctx.fillStyle = grad;
+    ctx.shadowColor = `rgba(${c.r}, ${c.g}, ${c.b}, 0.3)`;
+    ctx.shadowBlur = 6;
+    ctx.fill();
+  });
 }
 
 /* --- A. CANVAS ĐỐM SÁNG NỀN (SPARKLES) --- */
 class SparklesEngine {
   constructor(canvas) {
-    this.canvas = canvas;
     this.ctx = canvas ? canvas.getContext('2d') : null;
     this.stars = [];
-    this.init();
   }
 
   init() {
     if (!this.ctx) return;
+    const sprites = [makeGlowSprite('#fff8e7'), makeGlowSprite('#ffd1dc')];
     this.stars = [];
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const isMob = isMobileDevice();
-    this.count = isMob ? 24 : 60;
-    for (let i = 0; i < this.count; i++) {
+    const count = isMobileDevice() ? 14 : 50;
+    for (let i = 0; i < count; i++) {
       this.stars.push({
-        x: Math.random() * w,
-        y: Math.random() * h,
+        x: Math.random() * view.w,
+        y: Math.random() * view.h,
         radius: Math.random() * 1.6 + 0.6,
-        alpha: Math.random(),
+        alpha: Math.random() * Math.PI * 2,
         speed: Math.random() * 0.02 + 0.008,
-        color: Math.random() > 0.4 ? '#fff8e7' : '#ffd1dc'
+        sprite: sprites[Math.random() > 0.4 ? 0 : 1]
       });
     }
   }
 
   render() {
-    if (!this.ctx || prefersReducedMotion) return;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    this.ctx.clearRect(0, 0, w, h);
-
-    for (let s of this.stars) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    ctx.clearRect(0, 0, view.w, view.h);
+    for (const s of this.stars) {
       s.alpha += s.speed;
-      const currentAlpha = (Math.sin(s.alpha) + 1) / 2 * 0.85 + 0.15;
-      this.ctx.beginPath();
-      this.ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
-      this.ctx.fillStyle = s.color;
-      this.ctx.globalAlpha = currentAlpha;
-      this.ctx.shadowBlur = 8;
-      this.ctx.shadowColor = s.color;
-      this.ctx.fill();
+      ctx.globalAlpha = (Math.sin(s.alpha) + 1) / 2 * 0.85 + 0.15;
+      const d = s.radius / GLOW_CORE;
+      ctx.drawImage(s.sprite, s.x - d / 2, s.y - d / 2, d, d);
     }
-    this.ctx.shadowBlur = 0;
-    this.ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1;
   }
 }
 
 /* --- B. CANVAS CÁNH HOA RƠI LẢ TẢ (FALLING PETALS) --- */
 class Petal {
-  constructor(w, h) {
-    this.reset(w, h, true);
+  // start: 'screen' = rải ngẫu nhiên trên màn hình, 'above' = xếp so le phía trên để rơi vào dần
+  constructor(w, h, start) {
+    this.reset(w, h, start);
   }
 
-  reset(w, h, isFirst = false) {
-    this.w = w;
-    this.h = h;
+  reset(w, h, start = 'top') {
     this.x = Math.random() * (w + 100) - 50;
-    this.y = isFirst ? Math.random() * h : -30;
+    this.y = start === 'screen' ? Math.random() * h
+      : start === 'above' ? -30 - Math.random() * h * 0.9
+      : -30;
     this.size = Math.random() * 11 + 10; // Kích cỡ cánh hoa
     this.speedY = Math.random() * 1.2 + 0.8;
     this.speedX = Math.random() * 0.8 - 0.4;
@@ -244,15 +321,7 @@ class Petal {
     this.swing = Math.random() * Math.PI * 2;
     this.swingSpeed = Math.random() * 0.02 + 0.01;
     this.alpha = Math.random() * 0.35 + 0.65;
-    
-    // Tông màu pastel hồng phấn và san hô
-    const tones = [
-      { r: 255, g: 182, b: 193 }, // Light pink
-      { r: 255, g: 192, b: 203 }, // Pink
-      { r: 255, g: 213, b: 220 }, // Blush
-      { r: 255, g: 160, b: 175 }  // Coral pink
-    ];
-    this.color = tones[Math.floor(Math.random() * tones.length)];
+    this.tone = Math.floor(Math.random() * PETAL_TONES.length); // Tông màu pastel hồng phấn và san hô
   }
 
   update(w, h) {
@@ -263,81 +332,74 @@ class Petal {
     this.angle += this.angleSpeed;
 
     if (this.y > h + 30 || this.x < -60 || this.x > w + 60) {
-      this.reset(w, h, false);
+      this.reset(w, h);
     }
   }
 
-  draw(ctx) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
-    ctx.scale(1, Math.cos(this.flip));
-
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    // Vẽ cánh hoa cong tự nhiên
-    ctx.bezierCurveTo(-this.size / 2, -this.size / 2, -this.size / 2, -this.size * 1.2, 0, -this.size * 1.4);
-    ctx.bezierCurveTo(this.size / 2, -this.size * 1.2, this.size / 2, -this.size / 2, 0, 0);
-
-    const grad = ctx.createLinearGradient(0, 0, 0, -this.size * 1.4);
-    grad.addColorStop(0, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.alpha * 0.95})`);
-    grad.addColorStop(0.6, `rgba(255, 230, 235, ${this.alpha * 0.9})`);
-    grad.addColorStop(1, `rgba(255, 250, 252, ${this.alpha})`);
-
-    ctx.fillStyle = grad;
-    ctx.shadowColor = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0.3)`;
-    ctx.shadowBlur = 6;
-    ctx.fill();
-    ctx.restore();
+  draw(ctx, sprite, dpr) {
+    // Xoay + lật (scale trục y theo cos) gộp thành một ma trận, không cần save/restore
+    const k = this.size / PETAL_S * dpr, f = Math.cos(this.flip);
+    const cos = Math.cos(this.angle), sin = Math.sin(this.angle);
+    ctx.setTransform(cos * k, sin * k, -sin * k * f, cos * k * f, this.x * dpr, this.y * dpr);
+    ctx.globalAlpha = this.alpha;
+    ctx.drawImage(sprite, -PETAL_W / 2, -(PETAL_H - PETAL_PAD), PETAL_W, PETAL_H);
   }
 }
 
 class PetalsEngine {
   constructor(canvas) {
-    this.canvas = canvas;
     this.ctx = canvas ? canvas.getContext('2d') : null;
     this.petals = [];
-    this.init();
   }
 
-  init() {
+  init(enterFromTop = false) {
     if (!this.ctx) return;
+    this.sprites = PETAL_TONES.map(makePetalSprite);
     this.petals = [];
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const isMob = isMobileDevice();
-    this.count = isMob ? (CONFIG.petalsCount.mobile || 16) : (CONFIG.petalsCount.desktop || 36);
-    for (let i = 0; i < this.count; i++) {
-      this.petals.push(new Petal(w, h));
+    const count = isMobileDevice() ? (CONFIG.petalsCount.mobile || 12) : (CONFIG.petalsCount.desktop || 36);
+    for (let i = 0; i < count; i++) {
+      this.petals.push(new Petal(view.w, view.h, enterFromTop ? 'above' : 'screen'));
     }
   }
 
   render() {
-    if (!this.ctx || prefersReducedMotion || !CONFIG.effects.fallingPetals) return;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    this.ctx.clearRect(0, 0, w, h);
-
-    for (let p of this.petals) {
-      p.update(w, h);
-      p.draw(this.ctx);
+    const ctx = this.ctx;
+    if (!ctx) return;
+    ctx.clearRect(0, 0, view.w, view.h);
+    for (const p of this.petals) {
+      p.update(view.w, view.h);
+      if (p.y < -40) continue; // Chưa rơi vào màn hình
+      p.draw(ctx, this.sprites[p.tone], view.dpr);
     }
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.globalAlpha = 1;
   }
 }
 
 /* --- C. CANVAS TƯƠNG TÁC (CHUỘT RÊ & PHÁO HOA CLICK) --- */
 class InteractiveEngine {
   constructor(canvas) {
-    this.canvas = canvas;
     this.ctx = canvas ? canvas.getContext('2d') : null;
     this.particles = [];
+    this.sprites = {};
+  }
+
+  init() {
+    this.sprites = {}; // Vẽ lại sprite theo mật độ điểm ảnh hiện tại
+  }
+
+  sprite(shape, color) {
+    const key = shape + color;
+    if (!this.sprites[key]) {
+      this.sprites[key] = shape === 'heart' ? makeHeartSprite(color) : makeGlowSprite(color);
+    }
+    return this.sprites[key];
   }
 
   // Thêm tia sáng pháo hoa khi bấm
   burst(x, y) {
     if (!CONFIG.effects.clickFireworks || prefersReducedMotion) return;
-    const isMob = isMobileDevice();
-    const count = isMob ? 15 : 28;
+    const count = isMobileDevice() ? 10 : 24;
     const colors = ['#ffd166', '#ff758c', '#ffb6c1', '#ffffff', '#ff9f43', '#ffeaa7'];
 
     for (let i = 0; i < count; i++) {
@@ -361,7 +423,7 @@ class InteractiveEngine {
   // Thêm bụi sao khi di chuyển chuột hoặc vuốt
   addTrail(x, y) {
     if (!CONFIG.effects.mouseTrail || prefersReducedMotion) return;
-    if (Math.random() > 0.45) return; // Tiết chế để mượt mà
+    if (Math.random() > (isMobileDevice() ? 0.3 : 0.45)) return; // Tiết chế để mượt mà
     const colors = ['#ffe082', '#ffb6c1', '#ffffff'];
     this.particles.push({
       x: x + (Math.random() - 0.5) * 12,
@@ -378,10 +440,9 @@ class InteractiveEngine {
   }
 
   render() {
-    if (!this.ctx || this.particles.length === 0) return;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    this.ctx.clearRect(0, 0, w, h);
+    const ctx = this.ctx;
+    if (!ctx || this.particles.length === 0) return;
+    ctx.clearRect(0, 0, view.w, view.h);
 
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
@@ -395,30 +456,19 @@ class InteractiveEngine {
         continue;
       }
 
-      this.ctx.save();
-      this.ctx.globalAlpha = Math.max(0, p.alpha);
-      this.ctx.fillStyle = p.color;
-      this.ctx.shadowBlur = 6;
-      this.ctx.shadowColor = p.color;
-
+      ctx.globalAlpha = p.alpha;
       if (p.shape === 'heart') {
-        // Vẽ trái tim nhỏ
-        const s = p.size;
-        this.ctx.translate(p.x, p.y);
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, 0);
-        this.ctx.bezierCurveTo(-s, -s, -s * 1.4, s / 2, 0, s * 1.2);
-        this.ctx.bezierCurveTo(s * 1.4, s / 2, s, -s, 0, 0);
-        this.ctx.fill();
+        // Trái tim nhỏ
+        const k = p.size / HEART_S;
+        const w = (HEART_S * 2.2 + HEART_PAD * 2) * k, h = (HEART_S * 2 + HEART_PAD * 2) * k;
+        ctx.drawImage(this.sprite('heart', p.color), p.x - w / 2, p.y - (HEART_PAD + HEART_S * 0.8) * k, w, h);
       } else {
-        // Vẽ ngôi sao 4 cánh lấp lánh
-        const r = p.size;
-        this.ctx.beginPath();
-        this.ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-        this.ctx.fill();
+        // Đốm sáng lấp lánh
+        const d = p.size / GLOW_CORE * 0.7;
+        ctx.drawImage(this.sprite('spark', p.color), p.x - d / 2, p.y - d / 2, d, d);
       }
-      this.ctx.restore();
     }
+    ctx.globalAlpha = 1;
   }
 }
 
@@ -427,64 +477,71 @@ class InteractiveEngine {
  * 5. KHỞI TẠO VÒNG LẶP HOẠT ẢNH & XỬ LÝ SỰ KIỆN CANVAS
  * ============================================================================== */
 let sparklesEngine, petalsEngine, interactiveEngine;
-let animationFrameId = null;
+let canvases = [];
+let effectsStarted = false;
 let isTabActive = true;
 
 function setupCanvases() {
-  const canvasSparkles = document.getElementById('canvas-sparkles');
-  const canvasPetals = document.getElementById('canvas-petals');
-  const canvasInteractive = document.getElementById('canvas-interactive');
+  canvases = ['canvas-sparkles', 'canvas-petals', 'canvas-interactive'].map(id => document.getElementById(id));
+  sparklesEngine = new SparklesEngine(canvases[0]);
+  petalsEngine = new PetalsEngine(canvases[1]);
+  interactiveEngine = new InteractiveEngine(canvases[2]);
 
-  // Trên điện thoại, thanh địa chỉ ẩn/hiện khi cuộn cũng gây sự kiện resize:
-  // chỉ tạo lại hạt khi chiều rộng đổi để cánh hoa không bị "nhảy" lại từ đầu.
-  let lastWidth = window.innerWidth;
-  function resizeAll() {
-    resizeCanvas(canvasSparkles);
-    resizeCanvas(canvasPetals);
-    resizeCanvas(canvasInteractive);
-    if (window.innerWidth === lastWidth) return;
-    lastWidth = window.innerWidth;
-    if (sparklesEngine) sparklesEngine.init();
-    if (petalsEngine) petalsEngine.init();
-  }
-
-  resizeAll();
-  window.addEventListener('resize', debounce(resizeAll, 120));
-  window.addEventListener('orientationchange', () => {
-    setTimeout(resizeAll, 150);
-  });
-
-  sparklesEngine = new SparklesEngine(canvasSparkles);
-  petalsEngine = new PetalsEngine(canvasPetals);
-  interactiveEngine = new InteractiveEngine(canvasInteractive);
-
-  // Vòng lặp chính requestAnimationFrame
-  function loop() {
-    if (isTabActive) {
-      if (CONFIG.effects.backgroundSparkles) sparklesEngine.render();
-      if (CONFIG.effects.fallingPetals) petalsEngine.render();
-      interactiveEngine.render();
-    }
-    animationFrameId = requestAnimationFrame(loop);
-  }
-
-  loop();
+  // Vùng vẽ cao 100lvh nên thanh địa chỉ điện thoại ẩn/hiện không đổi kích thước:
+  // chỉ cấp phát lại canvas khi xoay máy / đổi cỡ cửa sổ thật sự.
+  window.addEventListener('resize', debounce(() => {
+    if (!effectsStarted) return;
+    const prev = { w: view.w, h: view.h, dpr: view.dpr };
+    measureView();
+    if (prev.w === view.w && prev.h === view.h && prev.dpr === view.dpr) return;
+    canvases.forEach(resizeCanvas);
+    sparklesEngine.init();
+    petalsEngine.init();
+    interactiveEngine.init();
+  }, 150));
 
   // Tạm dừng khi chuyển tab để tiết kiệm pin & CPU
   document.addEventListener('visibilitychange', () => {
     isTabActive = !document.hidden;
   });
 
-  // Sự kiện tương tác chuột & chạm màn hình
+  // Sự kiện tương tác chuột & chạm màn hình (chỉ khi hiệu ứng đã bật)
   window.addEventListener('pointermove', (e) => {
-    interactiveEngine.addTrail(e.clientX, e.clientY);
-  });
+    if (effectsStarted) interactiveEngine.addTrail(e.clientX, e.clientY);
+  }, { passive: true });
 
   window.addEventListener('pointerdown', (e) => {
     // Không bắn pháo hoa khi bấm vào các nút tương tác
-    if (e.target.closest('button, input, a, .polaroid-card')) return;
+    if (!effectsStarted || e.target.closest('button, input, a, .polaroid-card')) return;
     interactiveEngine.burst(e.clientX, e.clientY);
-  });
+  }, { passive: true });
+}
+
+// Bật hiệu ứng hạt: gọi sau khi phần chữ chính đã hiện xong.
+// Lớp canvas mờ dần vào (CSS), cánh hoa rơi vào từ phía trên nên số lượng trên màn hình tăng dần.
+function startEffects() {
+  if (effectsStarted || prefersReducedMotion) return;
+  effectsStarted = true;
+
+  measureView();
+  canvases.forEach(resizeCanvas);
+  sparklesEngine.init();
+  petalsEngine.init(true);
+  interactiveEngine.init();
+  document.body.classList.add('effects-on');
+
+  // Pháo hoa chào mừng ở trung tâm
+  interactiveEngine.burst(view.w / 2, view.h * 0.4);
+
+  function loop() {
+    if (isTabActive) {
+      if (CONFIG.effects.backgroundSparkles) sparklesEngine.render();
+      if (CONFIG.effects.fallingPetals) petalsEngine.render();
+      interactiveEngine.render();
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
 }
 
 
@@ -579,6 +636,48 @@ class MusicManager {
 /* ==============================================================================
  * 7. QUẢN LÝ MÀN HÌNH MỞ ĐẦU (ENVELOPE OVERLAY)
  * ============================================================================== */
+// Font của màn phong bì và của thiệp chính. Câu mẫu có dấu tiếng Việt để tải đúng bộ ký tự.
+const ENVELOPE_FONTS = ['400 1em "Plus Jakarta Sans"', '500 1em "Plus Jakarta Sans"', '600 1em "Plus Jakarta Sans"', '700 1em "Plus Jakarta Sans"'];
+const CARD_FONTS = ['700 1em "Dancing Script"', '700 1em "Playfair Display"', '900 1em "Playfair Display"',
+  'italic 400 1em "Playfair Display"', 'italic 600 1em "Playfair Display"', 'italic 400 1em "Plus Jakarta Sans"'];
+const FONT_SAMPLE = 'Chúc Mừng NGÀY PHỤ NỮ VIỆT NAM 20-10 Một tấm thiệp đong đầy yêu thương đang chờ bạn';
+const FONT_WAIT_MAX = 1500;
+
+// Dựng sẵn thiệp chính bên dưới phong bì (vẫn ẩn) và tải trước font của thiệp.
+// will-change đặt từ lúc này để trình duyệt vẽ sẵn các lớp nặng (hoa SVG, chữ 20-10 nhiều lớp bóng)
+// khi đang rảnh, thay vì vẽ đúng lúc chúng bắt đầu hiện (gây khựng). Gỡ ngay khi hiệu ứng xong.
+let mainCardPrepared = false;
+function prepareMainCard() {
+  if (mainCardPrepared) return;
+  mainCardPrepared = true;
+  // Gắn class lên đúng phần tử (không phải <html>) để trình duyệt chỉ tính lại style phần đó
+  document.getElementById('main-content').classList.add('main-ready');
+  primeWillChange(document.querySelectorAll('.animate-item, .corner-flower'));
+  waitForFonts(CARD_FONTS, 0);
+}
+
+function startMainEntrance() {
+  const overlay = document.getElementById('envelope-overlay');
+
+  primeWillChange([overlay, overlay.querySelector('.envelope-card-box')]);
+
+  // Crossfade: phong bì mờ dần + thu nhỏ, cùng lúc thiệp chính hiện lên bên dưới (0.8s)
+  requestAnimationFrame(() => {
+    document.body.classList.add('card-opened');
+    overlay.classList.add('hide-envelope');
+  });
+
+  // Xóa phong bì khỏi luồng hiển thị sau khi mờ hẳn
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) mainContent.focus({ preventScroll: true });
+  }, 850);
+
+  // Hiệu ứng hạt chỉ bắt đầu khi phần chữ chính (đến lời chúc) đã hiện xong
+  setTimeout(startEffects, 2100);
+}
+
 function setupEnvelopeIntro(musicManager) {
   const overlay = document.getElementById('envelope-overlay');
   const openBtn = document.getElementById('btn-open-card');
@@ -586,35 +685,34 @@ function setupEnvelopeIntro(musicManager) {
 
   if (!overlay || !openBtn) return;
 
+  // Tạo lớp riêng cho phong bì ngay từ đầu để trình duyệt vẽ sẵn trong lúc chờ font
+  primeWillChange([overlay.querySelector('.envelope-card-box')]);
+
+  // 1. Chờ font của phong bì (tối đa 1.5s) rồi mới cho phong bì hiện lên -> không thấy chữ đổi font.
+  //    Chờ thêm 2 khung hình để việc dàn lại chữ theo font mới xong hẳn trước khi bắt đầu hiệu ứng.
+  waitForFonts(ENVELOPE_FONTS, FONT_WAIT_MAX).then(nextFrames).then(() => {
+    overlay.classList.add('is-ready');
+
+    // 2. Phong bì hiện xong thì dựng sẵn thiệp chính bên dưới
+    setTimeout(prepareMainCard, 1000);
+  });
+
   function openCard() {
-    // 1. Phát nhạc nền
+    overlay.classList.add('is-ready');
+    prepareMainCard();
+
+    // Phát nhạc nền
     if (musicManager) {
       musicManager.play();
     }
 
-    // 2. Hoạt ảnh phong bì mở nắp và thư nhô lên
+    // Hoạt ảnh phong bì mở nắp và thư trượt ra (letter-rise kết thúc ở ~1.2s)
     if (envelopeWrapper) {
       envelopeWrapper.classList.add('open-anim');
     }
 
-    // 3. Mờ phong bì và kích hoạt giao diện chính
-    //    (đợi nắp lật + thiệp trượt ra xong: hoạt ảnh letter-rise kết thúc ở ~1.2s)
-    setTimeout(() => {
-      overlay.classList.add('hide-envelope');
-      document.body.classList.add('card-opened');
-
-      // Bắn pháo hoa chào mừng ở trung tâm
-      if (interactiveEngine) {
-        interactiveEngine.burst(window.innerWidth / 2, window.innerHeight * 0.4);
-      }
-    }, 1300);
-
-    // Xóa khỏi DOM sau khi chuyển cảnh xong
-    setTimeout(() => {
-      overlay.style.display = 'none';
-      const mainContent = document.getElementById('main-content');
-      if (mainContent) mainContent.focus();
-    }, 2150);
+    // Chuyển sang thiệp chính khi thư đã trượt ra VÀ font của thiệp đã sẵn sàng (chờ font tối đa 1.5s)
+    Promise.all([delay(1150), waitForFonts(CARD_FONTS, FONT_WAIT_MAX)]).then(startMainEntrance);
   }
 
   openBtn.addEventListener('click', openCard, { once: true });
@@ -662,18 +760,24 @@ function setupPhotoGallery() {
         <p class="polaroid-caption">${item.caption}</p>
       `;
     } else {
+      // Chưa gán src: ảnh chỉ tải khi cuộn gần tới (xem observeGallery bên dưới)
       card.innerHTML = `
         <div class="polaroid-img-wrapper">
-          <img class="polaroid-img" 
-               src="${item.src}" 
-               alt="${item.alt || item.caption || 'Ảnh 20/10'}" 
-               loading="lazy">
+          <img class="polaroid-img"
+               data-src="${item.src}"
+               alt="${item.alt || item.caption || 'Ảnh 20/10'}"
+               width="1024" height="1024" decoding="async">
         </div>
         <p class="polaroid-caption">${item.caption}</p>
       `;
 
-      // Xử lý tự động: Nếu ảnh chưa tồn tại trong thư mục images/, chuyển sang placeholder đẹp
+      // Ảnh tải xong mới mờ dần hiện lên
       const imgEl = card.querySelector('img');
+      imgEl.onload = function() {
+        this.classList.add('is-loaded');
+      };
+
+      // Xử lý tự động: Nếu ảnh chưa tồn tại trong thư mục images/, chuyển sang placeholder đẹp
       imgEl.onerror = function() {
         this.onerror = null;
         const wrapper = card.querySelector('.polaroid-img-wrapper');
@@ -696,6 +800,48 @@ function setupPhotoGallery() {
     });
 
     grid.appendChild(card);
+  });
+
+  observeGallery(grid);
+}
+
+// Thẻ ảnh hiện dần khi cuộn tới; ảnh được tải trước khi vào màn hình một đoạn
+function observeGallery(grid) {
+  const cards = Array.from(grid.querySelectorAll('.polaroid-card'));
+  const loadImage = card => {
+    const img = card.querySelector('img[data-src]');
+    if (!img) return;
+    img.src = img.dataset.src;
+    img.removeAttribute('data-src');
+  };
+
+  if (!('IntersectionObserver' in window)) {
+    cards.forEach(card => { loadImage(card); card.classList.add('in-view'); });
+    return;
+  }
+
+  const loadObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      loadImage(entry.target);
+      loadObserver.unobserve(entry.target);
+    });
+  }, { rootMargin: '400px 0px' });
+
+  const revealObserver = new IntersectionObserver(entries => {
+    // Các thẻ cùng vào màn hình một lượt thì hiện gối đầu nhau 0.15s
+    entries.filter(entry => entry.isIntersecting).forEach((entry, i) => {
+      const card = entry.target;
+      card.style.setProperty('--d', `${i * 0.15}s`);
+      primeWillChange([card]);
+      card.classList.add('in-view');
+      revealObserver.unobserve(card);
+    });
+  }, { threshold: 0.15 });
+
+  cards.forEach(card => {
+    loadObserver.observe(card);
+    revealObserver.observe(card);
   });
 }
 
@@ -893,6 +1039,35 @@ function debounce(fn, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(() => fn.apply(this, args), wait);
   };
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Đợi qua 2 khung hình (để trình duyệt vẽ xong thay đổi trước đó)
+function nextFrames() {
+  return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+// Tải các font cần thiết; xong hoặc quá maxWait (ms) thì tiếp tục (font-display: swap lo phần còn lại)
+function waitForFonts(fonts, maxWait) {
+  if (!document.fonts || !document.fonts.load) return Promise.resolve();
+  const loads = Promise.all(fonts.map(f => document.fonts.load(f, FONT_SAMPLE).catch(() => {})));
+  return Promise.race([loads, delay(maxWait)]);
+}
+
+// Đặt will-change cho phần tử sắp chuyển động và gỡ đi khi hoạt ảnh xuất hiện của nó kết thúc
+function primeWillChange(elements) {
+  elements.forEach(el => {
+    if (!el) return;
+    el.style.willChange = 'opacity, transform';
+    el.addEventListener('animationend', function done(e) {
+      if (e.target !== el) return;
+      el.style.willChange = '';
+      el.removeEventListener('animationend', done);
+    });
+  });
 }
 
 

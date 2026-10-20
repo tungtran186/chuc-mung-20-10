@@ -34,8 +34,38 @@
   /* Hiệu ứng chuyển động */
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-smooth: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* Easing mượt cho mọi hiệu ứng xuất hiện */
+  --rise: 16px;                                /* Quãng trượt lên khi xuất hiện */
   --transition-fast: 0.25s ease;
   --transition-normal: 0.4s ease;
+}
+
+/* --- HIỆU ỨNG XUẤT HIỆN DÙNG CHUNG ---
+   Chỉ animate opacity + transform (chạy trên GPU, không gây vẽ lại / tính lại bố cục).
+   Keyframes chỉ khai báo "from": trạng thái cuối lấy từ style gốc của phần tử.
+   Luôn dùng fill-mode both để phần tử giữ trạng thái ẩn trong lúc chờ delay -> không nháy. */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(var(--rise)); }
+}
+
+@keyframes date-in {
+  from { opacity: 0; transform: scale(0.92); }
+}
+
+@keyframes flower-in {
+  from { opacity: 0; transform: scale(0.88); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes envelope-shrink {
+  to { transform: scale(0.94); }
 }
 
 /* --- 2. RESET & BASE --- */
@@ -58,10 +88,6 @@ body {
   min-height: 100vh;
   min-height: 100svh;
   background-color: var(--bg-slate-dark);
-  background-image: 
-    radial-gradient(ellipse 65% 55% at 50% 38%, var(--glow-warm-gold) 0%, var(--glow-coral) 40%, rgba(31, 47, 58, 0.95) 75%, var(--bg-slate-deep) 100%),
-    linear-gradient(145deg, var(--bg-slate-dark) 0%, var(--bg-slate-light) 100%);
-  background-attachment: fixed;
   color: var(--color-cream);
   font-family: var(--font-body);
   line-height: 1.6;
@@ -76,6 +102,25 @@ body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
+/* Nền gradient cố định: dùng lớp fixed riêng thay cho background-attachment: fixed
+   (cái đó buộc trình duyệt vẽ lại cả trang mỗi lần cuộn trên điện thoại).
+   Cao 100lvh để không co giãn khi thanh địa chỉ ẩn/hiện. */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--bg-slate-dark);
+  background-image:
+    radial-gradient(ellipse 65% 55% at 50% 38%, var(--glow-warm-gold) 0%, var(--glow-coral) 40%, rgba(31, 47, 58, 0.95) 75%, var(--bg-slate-deep) 100%),
+    linear-gradient(145deg, var(--bg-slate-dark) 0%, var(--bg-slate-light) 100%);
+}
+
 /* Chặn zoom khi chạm đúp và tối ưu phản hồi trên mobile */
 button, input, a, .polaroid-card {
   touch-action: manipulation;
@@ -85,12 +130,22 @@ button, input, a, .polaroid-card {
 /* --- 3. LỚP CANVAS & ÁNH SÁNG NỀN --- */
 .canvas-container {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100%;
+  /* 100lvh: kích thước không đổi khi thanh địa chỉ điện thoại ẩn/hiện -> không phải cấp phát lại canvas */
+  height: 100vh;
+  height: 100lvh;
   pointer-events: none;
   z-index: 10;
   overflow: hidden;
+  /* Hiệu ứng hạt chỉ hiện (mờ dần vào) sau khi chữ chính đã xuất hiện xong */
+  opacity: 0;
+}
+
+body.effects-on .canvas-container {
+  opacity: 1;
+  animation: fade-in 2s ease-out both;
 }
 
 .canvas-container canvas {
@@ -114,8 +169,8 @@ button, input, a, .polaroid-card {
   transform: translate(-50%, -50%);
   width: min(85vw, 680px);
   height: min(75vw, 600px);
-  background: radial-gradient(circle, rgba(255, 180, 80, 0.22) 0%, rgba(255, 110, 130, 0.12) 45%, transparent 70%);
-  filter: blur(50px);
+  /* Gradient nhiều nấc mờ dần tới mép thay cho filter: blur (blur rất tốn công vẽ trên điện thoại) */
+  background: radial-gradient(closest-side, rgba(255, 180, 80, 0.2) 0%, rgba(255, 150, 105, 0.14) 30%, rgba(255, 110, 130, 0.07) 60%, rgba(255, 110, 130, 0.02) 85%, transparent 100%);
   pointer-events: none;
   z-index: 2;
   animation: pulse-glow 7s ease-in-out infinite alternate;
@@ -151,14 +206,13 @@ button, input, a, .polaroid-card {
   position: absolute;
   pointer-events: none;
   opacity: 0;
-  transform: scale(0.1);
-  transition: opacity 1.2s var(--ease-spring), transform 1.2s var(--ease-spring);
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35));
 }
 
+/* Hoa nở nhẹ (fade + phóng 0.88 -> 1), xong mới đung đưa.
+   Cuối flower-in và đầu sway đều là transform gốc nên nối liền, không giật. */
 body.card-opened .corner-flower {
   opacity: var(--flower-opacity, 1);
-  transform: scale(1);
 }
 
 /* Vị trí Desktop */
@@ -171,7 +225,7 @@ body.card-opened .corner-flower {
 }
 
 body.card-opened .corner-top-right {
-  animation: sway-top-right 6s ease-in-out infinite alternate 1.2s;
+  animation: flower-in 1.2s var(--ease-out) 0.2s both, sway-top-right 6s ease-in-out 1.4s infinite alternate;
 }
 
 .corner-bottom-left {
@@ -183,7 +237,7 @@ body.card-opened .corner-top-right {
 }
 
 body.card-opened .corner-bottom-left {
-  animation: sway-bottom-left 6.5s ease-in-out infinite alternate 1.5s;
+  animation: flower-in 1.2s var(--ease-out) 0.4s both, sway-bottom-left 6.5s ease-in-out 1.6s infinite alternate;
 }
 
 .corner-mid-left {
@@ -195,7 +249,7 @@ body.card-opened .corner-bottom-left {
 }
 
 body.card-opened .corner-mid-left {
-  animation: sway-mid-left 5.5s ease-in-out infinite alternate 1.8s;
+  animation: flower-in 1.2s var(--ease-out) 0.6s both, sway-mid-left 5.5s ease-in-out 1.8s infinite alternate;
 }
 
 @keyframes sway-top-right {
@@ -217,20 +271,18 @@ body.card-opened .corner-mid-left {
 .envelope-overlay {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(35, 52, 65, 0.96) 0%, rgba(18, 28, 35, 0.98) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  /* Nền gần như đặc nên không cần backdrop-filter (rất nặng khi lớp phủ toàn màn hình mờ dần) */
+  background: radial-gradient(circle at center, rgb(35, 52, 65) 0%, rgb(18, 28, 35) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
   padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  transition: opacity 0.8s var(--ease-smooth), visibility 0.8s var(--ease-smooth);
 }
 
+/* Chuyển cảnh: phong bì mờ dần + thu nhỏ nhẹ, cùng lúc thiệp chính hiện lên bên dưới (crossfade) */
 .envelope-overlay.hide-envelope {
-  opacity: 0;
-  visibility: hidden;
+  animation: fade-out 0.8s var(--ease-out) both;
   pointer-events: none;
 }
 
@@ -241,6 +293,17 @@ body.card-opened .corner-mid-left {
   width: min(85vw, 380px);
   position: relative;
   text-align: center;
+  /* Ẩn cho đến khi font sẵn sàng (.envelope-overlay.is-ready) -> không thấy chữ đổi font */
+  opacity: 0;
+}
+
+.envelope-overlay.is-ready .envelope-card-box {
+  opacity: 1;
+  animation: rise-in 1s var(--ease-out) both;
+}
+
+.envelope-overlay.hide-envelope .envelope-card-box {
+  animation: envelope-shrink 0.8s var(--ease-out) both;
 }
 
 .envelope-glow-aura {
@@ -250,8 +313,7 @@ body.card-opened .corner-mid-left {
   transform: translate(-50%, -50%);
   width: min(80vw, 290px);
   height: 230px;
-  background: radial-gradient(circle, rgba(255, 122, 138, 0.45) 0%, rgba(255, 190, 90, 0.25) 50%, transparent 75%);
-  filter: blur(35px);
+  background: radial-gradient(closest-side, rgba(255, 122, 138, 0.4) 0%, rgba(255, 160, 110, 0.26) 35%, rgba(255, 190, 90, 0.1) 65%, rgba(255, 190, 90, 0.03) 85%, transparent 100%);
   border-radius: 50%;
   animation: pulse-glow 3s infinite alternate;
 }
@@ -271,7 +333,6 @@ body.card-opened .corner-mid-left {
   margin-top: calc(var(--env-h) * 0.55);
   margin-bottom: clamp(16px, 4vh, 26px);
   perspective: 900px;
-  filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.5));
 }
 
 .envelope-back,
@@ -288,6 +349,7 @@ body.card-opened .corner-mid-left {
   height: 100%;
   background: #16222a;
   border-radius: 10px;
+  box-shadow: 0 16px 26px rgba(0, 0, 0, 0.5); /* Bóng tĩnh, rẻ hơn filter: drop-shadow */
 }
 
 .envelope-front {
@@ -479,6 +541,17 @@ body.card-opened .corner-mid-left {
 }
 
 /* --- 6. PHẦN THIỆP CHÍNH (HERO CARD) --- */
+/* Thiệp chính chưa dựng cho đến khi phong bì đã hiện (.main-content.main-ready):
+   font và ảnh của thiệp không tranh băng thông với font của phong bì trên mạng chậm.
+   Sau đó thiệp được dựng sẵn ngầm bên dưới phong bì nên lúc mở không phải tính bố cục. */
+.main-content {
+  display: none;
+}
+
+.main-content.main-ready {
+  display: block;
+}
+
 .main-content {
   position: relative;
   z-index: 5;
@@ -515,37 +588,34 @@ body.card-opened .corner-mid-left {
   margin: 0 auto;
 }
 
-/* Hoạt ảnh xuất hiện tuần tự */
+/* Hoạt ảnh xuất hiện tuần tự: mỗi phần 1s, nối gối đầu cách nhau 0.18s.
+   Ẩn sẵn từ CSS ban đầu (opacity: 0) để không bao giờ hiện lên rồi mới ẩn. */
 .animate-item {
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.8s var(--ease-smooth), transform 0.8s var(--ease-smooth);
 }
 
 body.card-opened .animate-item {
   opacity: 1;
-  transform: translateY(0);
+  animation: rise-in 1s var(--ease-out) var(--d, 0s) both;
 }
 
-body.card-opened #greeting-badge { transition-delay: 0.15s; }
-body.card-opened #title-chucmung { transition-delay: 0.35s; }
-body.card-opened #title-ngayphunu { transition-delay: 0.55s; }
-body.card-opened #title-date-wrapper { transition-delay: 0.75s; }
-body.card-opened .divider-ornament { transition-delay: 0.95s; }
-body.card-opened .wish-container { transition-delay: 1.15s; }
-body.card-opened .tags-container { transition-delay: 1.35s; }
-body.card-opened .sender-container { transition-delay: 1.55s; }
-body.card-opened .hero-actions { transition-delay: 1.75s; }
+body.card-opened #greeting-badge     { --d: 0.05s; }
+body.card-opened #title-chucmung     { --d: 0.23s; }
+body.card-opened #title-ngayphunu    { --d: 0.41s; }
+body.card-opened #title-date-wrapper { --d: 0.59s; animation-name: date-in; animation-duration: 1.1s; }
+body.card-opened .divider-ornament   { --d: 0.77s; }
+body.card-opened .wish-container     { --d: 0.95s; }
+body.card-opened .tags-container     { --d: 1.13s; }
+body.card-opened .sender-container   { --d: 1.31s; }
+body.card-opened .hero-actions       { --d: 1.49s; }
 
 /* Nhãn gửi tặng cá nhân */
 .greeting-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 182, 193, 0.35);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 6px 16px;
   border-radius: 50px;
   font-size: clamp(0.78rem, 2.5vw, 0.96rem);
@@ -579,7 +649,11 @@ body.card-opened .hero-actions { transition-delay: 1.75s; }
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shine-text 5s linear infinite;
+}
+
+/* Ánh kim chạy trên chữ buộc vẽ lại mỗi khung hình -> chỉ bắt đầu sau khi chuỗi xuất hiện xong */
+body.card-opened .cursive-text {
+  animation: shine-text 5s linear 2.8s infinite;
 }
 
 @keyframes shine-text {
@@ -641,7 +715,7 @@ body.card-opened .hero-actions { transition-delay: 1.75s; }
 }
 
 body.card-opened .title-date {
-  animation: date-float-glow 4s ease-in-out infinite alternate;
+  animation: date-float-glow 4s ease-in-out 2.8s infinite alternate;
 }
 
 @keyframes date-float-glow {
@@ -661,8 +735,7 @@ body.card-opened .title-date {
   transform: translate(-50%, -50%);
   width: 120%;
   height: 120%;
-  background: radial-gradient(circle, rgba(255, 180, 70, 0.3) 0%, rgba(255, 110, 130, 0.15) 50%, transparent 75%);
-  filter: blur(35px);
+  background: radial-gradient(closest-side, rgba(255, 180, 70, 0.28) 0%, rgba(255, 140, 100, 0.18) 35%, rgba(255, 110, 130, 0.07) 65%, rgba(255, 110, 130, 0.02) 85%, transparent 100%);
   pointer-events: none;
   z-index: -1;
 }
@@ -725,10 +798,8 @@ body.card-opened .title-date {
 }
 
 .tag-pill {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   color: #fce4ec;
   padding: 5px 12px;
   border-radius: 30px;
@@ -787,10 +858,10 @@ body.card-opened .title-date {
 }
 
 .btn-share {
-  background: rgba(255, 255, 255, 0.12);
+  /* Nền tối gần đặc thay cho backdrop-filter: hoa trang trí phía sau không lộ qua chữ */
+  background: rgba(52, 72, 86, 0.92);
   border: 1px solid rgba(255, 182, 193, 0.4);
   color: #fff;
-  backdrop-filter: blur(10px);
 }
 
 .btn-share:hover {
@@ -879,6 +950,19 @@ body.card-opened .title-date {
   transition: transform 0.35s var(--ease-spring), box-shadow 0.35s var(--ease-spring);
   display: flex;
   flex-direction: column;
+  /* Độ nghiêng để trong biến --tilt để hiệu ứng trượt lên giữ nguyên độ nghiêng */
+  transform: rotate(var(--tilt, 0deg));
+  /* Ẩn cho đến khi cuộn tới (IntersectionObserver thêm class .in-view) */
+  opacity: 0;
+}
+
+.polaroid-card.in-view {
+  opacity: 1;
+  animation: card-rise 1s var(--ease-out) var(--d, 0s) both;
+}
+
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(var(--rise)) rotate(var(--tilt, 0deg)); }
 }
 
 /* Băng dính Washi Tape trang trí */
@@ -898,10 +982,10 @@ body.card-opened .title-date {
 }
 
 /* Độ nghiêng Desktop */
-.photo-grid .polaroid-card:nth-child(4n+1) { transform: rotate(-2.5deg); }
-.photo-grid .polaroid-card:nth-child(4n+2) { transform: rotate(2.2deg); }
-.photo-grid .polaroid-card:nth-child(4n+3) { transform: rotate(-1.6deg); }
-.photo-grid .polaroid-card:nth-child(4n+4) { transform: rotate(2.6deg); }
+.photo-grid .polaroid-card:nth-child(4n+1) { --tilt: -2.5deg; }
+.photo-grid .polaroid-card:nth-child(4n+2) { --tilt: 2.2deg; }
+.photo-grid .polaroid-card:nth-child(4n+3) { --tilt: -1.6deg; }
+.photo-grid .polaroid-card:nth-child(4n+4) { --tilt: 2.6deg; }
 
 /* Hover trên thiết bị có chuột */
 @media (hover: hover) {
@@ -928,9 +1012,10 @@ body.card-opened .title-date {
 .polaroid-img-wrapper {
   position: relative;
   width: 100%;
+  /* Khung giữ chỗ vuông có nền sẵn -> trang không nhảy bố cục khi ảnh tải xong */
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background: #f0f3f6;
+  background: linear-gradient(135deg, #f6eef1 0%, #eef2f5 100%);
   border-radius: 2px;
 }
 
@@ -940,12 +1025,18 @@ body.card-opened .title-date {
   object-fit: cover;
   display: block;
   transition: transform 0.5s var(--ease-smooth);
+  opacity: 0;
+}
+
+.polaroid-img.is-loaded {
+  opacity: 1;
+  animation: fade-in 0.9s var(--ease-out) both;
 }
 
 .polaroid-caption {
   font-family: var(--font-cursive);
   font-size: clamp(1.2rem, 3.5vw, 1.45rem);
-  font-weight: 600;
+  font-weight: 700;
   color: #3b4b56;
   text-align: center;
   margin-top: 10px;
@@ -1296,10 +1387,8 @@ body.card-opened .title-date {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: rgba(35, 52, 65, 0.8);
+  background: rgba(35, 52, 65, 0.92);
   border: 1.5px solid rgba(255, 182, 193, 0.5);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -1409,10 +1498,10 @@ body.card-opened .title-date {
   }
 
   /* Giảm độ nghiêng polaroid trên mobile (rotate tối đa 1.8deg) để không tràn mép */
-  .photo-grid .polaroid-card:nth-child(4n+1) { transform: rotate(-1.4deg); }
-  .photo-grid .polaroid-card:nth-child(4n+2) { transform: rotate(1.4deg); }
-  .photo-grid .polaroid-card:nth-child(4n+3) { transform: rotate(-1deg); }
-  .photo-grid .polaroid-card:nth-child(4n+4) { transform: rotate(1.2deg); }
+  .photo-grid .polaroid-card:nth-child(4n+1) { --tilt: -1.4deg; }
+  .photo-grid .polaroid-card:nth-child(4n+2) { --tilt: 1.4deg; }
+  .photo-grid .polaroid-card:nth-child(4n+3) { --tilt: -1deg; }
+  .photo-grid .polaroid-card:nth-child(4n+4) { --tilt: 1.2deg; }
   
   .polaroid-card {
     padding: 10px 10px 14px;
@@ -1444,7 +1533,7 @@ body.card-opened .title-date {
   }
 
   .photo-grid .polaroid-card:nth-child(n) {
-    transform: rotate(0deg);
+    --tilt: 0deg;
   }
 }
 
@@ -1577,15 +1666,48 @@ body.card-opened .title-date {
   }
 }
 
-/* --- 14. PREFERS-REDUCED-MOTION --- */
+/* --- 14. PREFERS-REDUCED-MOTION: chỉ fade đơn giản, không trượt / phóng / lặp --- */
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
-  .warm-glow-center, .corner-flower, .title-date {
+
+  /* Tắt các hiệu ứng lặp trang trí */
+  .warm-glow-center,
+  .envelope-glow-aura,
+  .letter-preview-heart,
+  .btn-sparkle,
+  .scroll-arrow,
+  .music-playing .music-icon,
+  body.card-opened .cursive-text,
+  body.card-opened .title-date {
     animation: none !important;
+  }
+
+  /* Xuất hiện: fade cùng lúc, không delay */
+  .envelope-overlay.is-ready .envelope-card-box,
+  body.card-opened .animate-item,
+  body.card-opened .corner-flower,
+  body.effects-on .canvas-container,
+  .polaroid-card.in-view,
+  .polaroid-img.is-loaded {
+    animation: fade-in 0.6s ease both !important;
+  }
+
+  .envelope-overlay.hide-envelope {
+    animation: fade-out 0.6s ease both !important;
+  }
+
+  .envelope-overlay.hide-envelope .envelope-card-box {
+    animation: none !important;
+  }
+
+  /* Phong bì: thiệp hiện ngay ở vị trí đã mở */
+  .envelope-wrapper.open-anim .letter-preview {
+    animation: none !important;
+    transform: translateY(-62%);
+    z-index: 6;
   }
 }
