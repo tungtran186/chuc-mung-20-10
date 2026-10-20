@@ -1,0 +1,13 @@
+# Hệ điều hành / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# File tạm
+*.tmp
+*.bak
+*.log
+~$*
+node_modules/

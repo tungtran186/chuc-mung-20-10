@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chúc Mừng Ngày Phụ Nữ Việt Nam 20/10 🌸</title>
+  
+  <!-- Meta SEO & Social Sharing (Open Graph / Zalo / Facebook) -->
+  <meta name="description" content="Thiệp chúc mừng Ngày Phụ nữ Việt Nam 20/10 ấm áp, rực rỡ và đong đầy yêu thương gửi đến những người phụ nữ tuyệt vời.">
+  <meta name="keywords" content="20/10, ngày phụ nữ việt nam, thiệp 20/10, chúc mừng 20-10, phụ nữ việt nam">
+  <meta name="author" content="20-10 Celebration">
+  <meta name="theme-color" content="#1f2f3a">
+
+  <!-- Open Graph / Facebook / Zalo -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Chúc Mừng Ngày Phụ Nữ Việt Nam 20/10 🌸">
+  <meta property="og:description" content="Chúc một nửa thế giới luôn xinh đẹp, rạng rỡ, bình an và ngập tràn hạnh phúc!">
+  <meta property="og:image" content="images/og-preview.jpg">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Chúc Mừng Ngày Phụ Nữ Việt Nam 20/10 🌸">
+  <meta name="twitter:description" content="Chúc một nửa thế giới luôn xinh đẹp, rạng rỡ và ngập tràn hạnh phúc!">
+
+  <!-- Favicon hình đóa hoa sứ hồng rực rỡ (SVG Data URI) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='c' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffd166'/%3E%3Cstop offset='70%25' stop-color='%23ff9f43'/%3E%3Cstop offset='100%25' stop-color='%23ff758c'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cg transform='translate(32,32)'%3E%3Cpath d='M0,-24 C8,-24 16,-12 14,0 C12,12 0,16 0,0 Z' fill='%23ffb3c6' transform='rotate(0)'/%3E%3Cpath d='M0,-24 C8,-24 16,-12 14,0 C12,12 0,16 0,0 Z' fill='%23ffb3c6' transform='rotate(72)'/%3E%3Cpath d='M0,-24 C8,-24 16,-12 14,0 C12,12 0,16 0,0 Z' fill='%23ffb3c6' transform='rotate(144)'/%3E%3Cpath d='M0,-24 C8,-24 16,-12 14,0 C12,12 0,16 0,0 Z' fill='%23ffb3c6' transform='rotate(216)'/%3E%3Cpath d='M0,-24 C8,-24 16,-12 14,0 C12,12 0,16 0,0 Z' fill='%23ffb3c6' transform='rotate(288)'/%3E%3Ccircle r='7' fill='url(%23c)'/%3E%3C/g%3E%3C/svg%3E">
+
+  <!-- Google Fonts: Dancing Script, Playfair Display, Plus Jakarta Sans (Hỗ trợ tiếng Việt đầy đủ) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,400;1,600&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========================================================
+       CÁC LỚP CANVAS HIỆU ỨNG (HẠT SAO, CÁNH HOA, TƯƠNG TÁC)
+       ======================================================== -->
+  <div class="canvas-container" aria-hidden="true">
+    <canvas id="canvas-sparkles"></canvas>
+    <canvas id="canvas-petals"></canvas>
+    <canvas id="canvas-interactive"></canvas>
+  </div>
+
+  <!-- Quầng sáng ấm áp ở giữa & lớp vignette quanh viền -->
+  <div class="warm-glow-center" aria-hidden="true"></div>
+  <div class="vignette-overlay" aria-hidden="true"></div>
+
+  <!-- ========================================================
+       SVG HOA SỨ 5 CÁNH & CÀNH LÁ TRANG TRÍ Ở CÁC GÓC
+       (Vẽ bằng SVG inline thuần túy, không phụ thuộc ảnh ngoài)
+       ======================================================== -->
+  <svg class="svg-defs" aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;">
+    <defs>
+      <!-- Gradient cánh hoa sứ: hồng phấn chuyển dần sang trắng viền, tâm vàng cam ấm -->
+      <linearGradient id="petal-grad" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#ffb6c1" stop-opacity="0.95" />
+        <stop offset="35%" stop-color="#ffd5dc" stop-opacity="0.98" />
+        <stop offset="100%" stop-color="#fff8f9" stop-opacity="1" />
+      </linearGradient>
+      <!-- Gradient bóng đổ cánh hoa tạo chiều sâu -->
+      <linearGradient id="petal-shadow" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#e27387" stop-opacity="0.45" />
+        <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+      </linearGradient>
+      <!-- Gradient nhụy hoa màu vàng cam tỏa nắng -->
+      <radialGradient id="center-gold-glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#fff275" />
+        <stop offset="30%" stop-color="#ffbe3b" />
+        <stop offset="70%" stop-color="#ff844b" />
+        <stop offset="100%" stop-color="#ff758c" stop-opacity="0" />
+      </radialGradient>
+      <!-- Gradient cành lá hồng nhạt thanh tao -->
+      <linearGradient id="stem-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f8bbd0" stop-opacity="0.85" />
+        <stop offset="50%" stop-color="#e898aa" stop-opacity="0.65" />
+        <stop offset="100%" stop-color="#b27181" stop-opacity="0.45" />
+      </linearGradient>
+      <!-- Gradient lá mềm mại -->
+      <linearGradient id="leaf-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#fce4ec" stop-opacity="0.85" />
+        <stop offset="60%" stop-color="#f8bbd0" stop-opacity="0.6" />
+        <stop offset="100%" stop-color="#d48297" stop-opacity="0.4" />
+      </linearGradient>
+
+      <!-- Symbol: 1 đóa hoa sứ 5 cánh hoàn chỉnh -->
+      <g id="plumeria-flower">
+        <!-- 5 cánh hoa xếp xoay tròn 72 độ -->
+        <g class="flower-petals">
+          <!-- Cánh 1 -->
+          <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-grad)" filter="drop-shadow(0 2px 4px rgba(210,90,115,0.25))" />
+          <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-shadow)" />
+          
+          <!-- Cánh 2 (xoay 72°) -->
+          <g transform="rotate(72)">
+            <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-grad)" filter="drop-shadow(0 2px 4px rgba(210,90,115,0.25))" />
+            <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-shadow)" />
+          </g>
+
+          <!-- Cánh 3 (xoay 144°) -->
+          <g transform="rotate(144)">
+            <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-grad)" filter="drop-shadow(0 2px 4px rgba(210,90,115,0.25))" />
+            <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-shadow)" />
+          </g>
+
+          <!-- Cánh 4 (xoay 216°) -->
+          <g transform="rotate(216)">
+            <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-grad)" filter="drop-shadow(0 2px 4px rgba(210,90,115,0.25))" />
+            <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-shadow)" />
+          </g>
+
+          <!-- Cánh 5 (xoay 288°) -->
+          <g transform="rotate(288)">
+            <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-grad)" filter="drop-shadow(0 2px 4px rgba(210,90,115,0.25))" />
+            <path d="M 0,-4 C 18,-6 38,-28 26,-46 C 14,-62 -8,-58 -18,-42 C -24,-30 -8,-10 0,-4 Z" fill="url(#petal-shadow)" />
+          </g>
+        </g>
+        <!-- Nhụy hoa vàng cam tỏa sáng ấm áp -->
+        <circle cx="0" cy="0" r="16" fill="url(#center-gold-glow)" />
+        <circle cx="0" cy="0" r="6" fill="#fff7b0" opacity="0.9" />
+      </g>
+    </defs>
+  </svg>
+
+  <!-- Cụm hoa trang trí ở các góc (Được bọc trong wrapper chống tràn màn hình) -->
+  <div class="corner-flowers-wrapper" aria-hidden="true">
+    <!-- Hoa góc Trên - Phải -->
+    <div class="corner-flower corner-top-right">
+      <svg viewBox="0 0 340 340" width="100%" height="100%">
+        <!-- Cành lá mảnh uốn lượn -->
+        <path d="M 330,10 C 260,30 180,90 140,180 C 110,245 90,290 30,320" fill="none" stroke="url(#stem-grad)" stroke-width="2.5" stroke-linecap="round" />
+        <path d="M 230,70 C 190,40 140,40 110,70 C 145,85 190,80 230,70 Z" fill="url(#leaf-grad)" />
+        <path d="M 160,140 C 115,130 90,165 75,200 C 105,195 140,175 160,140 Z" fill="url(#leaf-grad)" />
+        <path d="M 100,230 C 65,220 40,250 25,280 C 55,275 85,255 100,230 Z" fill="url(#leaf-grad)" />
+
+        <!-- Bông hoa chính lớn -->
+        <g transform="translate(250, 80) scale(1.15) rotate(-15)">
+          <use href="#plumeria-flower" />
+        </g>
+        <!-- Bông hoa vừa -->
+        <g transform="translate(150, 165) scale(0.85) rotate(25)">
+          <use href="#plumeria-flower" />
+        </g>
+        <!-- Bông nụ / hoa nhỏ -->
+        <g transform="translate(75, 275) scale(0.55) rotate(-35)">
+          <use href="#plumeria-flower" />
+        </g>
+        <!-- Các đốm nhụy phát sáng -->
+        <circle cx="200" cy="110" r="3" fill="#ffe082" opacity="0.75" />
+        <circle cx="120" cy="210" r="2.5" fill="#ffe082" opacity="0.75" />
+      </svg>
+    </div>
+
+    <!-- Hoa góc Dưới - Trái -->
+    <div class="corner-flower corner-bottom-left">
+      <svg viewBox="0 0 340 340" width="100%" height="100%">
+        <!-- Cành lá mảnh uốn lượn -->
+        <path d="M 10,330 C 30,260 90,180 180,140 C 245,110 290,90 320,30" fill="none" stroke="url(#stem-grad)" stroke-width="2.5" stroke-linecap="round" />
+        <path d="M 70,230 C 40,190 40,140 70,110 C 85,145 80,190 70,230 Z" fill="url(#leaf-grad)" />
+        <path d="M 140,160 C 130,115 165,90 200,75 C 195,105 175,140 140,160 Z" fill="url(#leaf-grad)" />
+        <path d="M 230,100 C 220,65 250,40 280,25 C 275,55 255,85 230,100 Z" fill="url(#leaf-grad)" />
+
+        <!-- Bông hoa chính lớn -->
+        <g transform="translate(80, 250) scale(1.18) rotate(40)">
+          <use href="#plumeria-flower" />
+        </g>
+        <!-- Bông hoa vừa -->
+        <g transform="translate(170, 150) scale(0.85) rotate(-20)">
+          <use href="#plumeria-flower" />
+        </g>
+        <!-- Bông hoa nhỏ -->
+        <g transform="translate(270, 75) scale(0.6) rotate(60)">
+          <use href="#plumeria-flower" />
+        </g>
+        <circle cx="130" cy="190" r="3" fill="#ffe082" opacity="0.75" />
+      </svg>
+    </div>
+
+    <!-- Hoa trang trí Bên Trái -->
+    <div class="corner-flower corner-mid-left">
+      <svg viewBox="0 0 200 300" width="100%" height="100%">
+        <path d="M 0,50 C 60,80 80,150 70,220 C 65,250 40,280 0,300" fill="none" stroke="url(#stem-grad)" stroke-width="2" stroke-linecap="round" />
+        <path d="M 50,110 C 90,100 110,130 115,155 C 85,150 60,135 50,110 Z" fill="url(#leaf-grad)" />
+        <path d="M 65,190 C 100,185 110,215 105,240 C 80,230 65,210 65,190 Z" fill="url(#leaf-grad)" />
+        <g transform="translate(60, 130) scale(0.8) rotate(15)">
+          <use href="#plumeria-flower" />
+        </g>
+        <g transform="translate(50, 220) scale(0.6) rotate(-30)">
+          <use href="#plumeria-flower" />
+        </g>
+      </svg>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MÀN HÌNH MỞ ĐẦU: PHONG BAO THIỆP CHÚC MỪNG
+       (Người dùng bấm "Mở thiệp" để kích hoạt nhạc & hoạt ảnh)
+       ======================================================== -->
+  <div id="envelope-overlay" class="envelope-overlay" role="dialog" aria-modal="true" aria-label="Mở thiệp chúc mừng 20/10">
+    <div class="envelope-card-box">
+      <!-- Cánh hoa trang trí lơ lửng quanh thiệp -->
+      <div class="envelope-glow-aura" aria-hidden="true"></div>
+
+      <div class="envelope-wrapper">
+        <div class="envelope-flap" aria-hidden="true"></div>
+        <div class="envelope-pocket">
+          <!-- Tấm thiệp nhô ra nhẹ -->
+          <div class="letter-preview" aria-hidden="true">
+            <span class="letter-preview-heart">🌸</span>
+            <span class="letter-preview-text">Gửi người phụ nữ tuyệt vời</span>
+          </div>
+          <div class="envelope-seal">
+            <div class="seal-inner">
+              <span class="seal-icon">✨</span>
+              <span class="seal-text">20·10</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lời nhắn gợi ý & Nút bấm mở -->
+      <div class="envelope-actions">
+        <p class="envelope-caption">Một tấm thiệp đong đầy yêu thương đang chờ bạn...</p>
+        <button id="btn-open-card" class="btn-open-card" aria-label="Mở thiệp và thưởng thức âm nhạc">
+          <span class="btn-icon">💌</span>
+          <span class="btn-text">Mở Thiệp Chúc Mừng</span>
+          <span class="btn-sparkle">✨</span>
+        </button>
+        <p class="envelope-subnote">🎵 Bấm để mở thiệp & tự động phát giai điệu ngọt ngào</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       NỘI DUNG CHÍNH: THIỆP 20/10 & KHOẢNH KHẮC ĐẸP
+       ======================================================== -->
+  <main id="main-content" class="main-content" tabIndex="-1">
+    
+    <!-- KHU VỰC THIỆP CHÍNH (HERO CARD) -->
+    <section class="hero-card-section" id="hero-card" aria-label="Thiệp chúc mừng ngày 20/10">
+      <div class="hero-card-container">
+        
+        <!-- Nhãn kính gửi cá nhân hóa (có thể đổi qua URL ?to=...) -->
+        <div class="greeting-badge animate-item" id="greeting-badge">
+          <span class="badge-icon">💖</span>
+          <span class="badge-text">Thân thương gửi tặng <strong id="recipient-highlight">chị em</strong></span>
+          <span class="badge-icon">🌸</span>
+        </div>
+
+        <!-- 1. "Chúc Mừng" (Thư pháp Dancing Script mềm mại) -->
+        <h2 class="title-chucmung animate-item" id="title-chucmung">
+          <span class="cursive-text">Chúc Mừng</span>
+        </h2>
+
+        <!-- 2. "NGÀY PHỤ NỮ VIỆT NAM" (Serif Playfair Display in hoa, hồng san hô) -->
+        <h1 class="title-ngayphunu animate-item" id="title-ngayphunu">
+          <span class="title-word">NGÀY PHỤ NỮ</span> <span class="title-word">VIỆT NAM</span>
+        </h1>
+
+        <!-- 3. "20-10" (Số to 3D nổi bật, bóng cam vàng ấm) -->
+        <div class="title-date-wrapper animate-item" id="title-date-wrapper">
+          <div class="title-date" id="title-date">
+            <span class="digit">2</span>
+            <span class="digit">0</span>
+            <span class="dash">-</span>
+            <span class="digit">1</span>
+            <span class="digit">0</span>
+          </div>
+          <div class="date-glow-halo" aria-hidden="true"></div>
+        </div>
+
+        <!-- Dải hoa văn phân cách thanh lịch -->
+        <div class="divider-ornament animate-item" aria-hidden="true">
+          <span class="divider-line"></span>
+          <span class="divider-flower">❦ 🌸 ❦</span>
+          <span class="divider-line"></span>
+        </div>
+
+        <!-- 4. Lời chúc bên dưới viết chữ nghiêng thanh thoát -->
+        <div class="wish-container animate-item">
+          <p class="wish-text" id="wish-text">
+            “Chúc <span id="recipient-name">chị em</span> ngày 20/10 hạnh phúc ngập tràn, luôn xinh đẹp và rạng rỡ yêu thương.”
+          </p>
+        </div>
+
+        <!-- Các thẻ lời chúc nhỏ ngọt ngào -->
+        <div class="tags-container animate-item" aria-hidden="true">
+          <span class="tag-pill">🌹 Trẻ Trung & Xinh Đẹp</span>
+          <span class="tag-pill">✨ Hạnh Phúc Ngập Tràn</span>
+          <span class="tag-pill">🌸 Vạn Sự May Mắn</span>
+          <span class="tag-pill">💖 Luôn Được Yêu Thương</span>
+        </div>
+
+        <!-- Tên người / đơn vị gửi thiệp -->
+        <div class="sender-container animate-item">
+          <p class="sender-text" id="sender-signature">
+            — Thân gửi từ: <span id="sender-name">Những người luôn yêu quý bạn</span> ❤️ —
+          </p>
+        </div>
+
+        <!-- Nút tiện ích: Tùy chỉnh link gửi bạn bè & Cuộn xem ảnh -->
+        <div class="hero-actions animate-item">
+          <button id="btn-share-link" class="btn-action btn-share" aria-label="Tạo link chúc mừng cá nhân hóa">
+            <span>🎁 Tạo link gửi người thương</span>
+          </button>
+          <a href="#gallery-section" class="btn-action btn-scroll-gallery" aria-label="Cuộn xuống xem album ảnh">
+            <span>📸 Xem khoảnh khắc đẹp</span>
+            <span class="scroll-arrow">↓</span>
+          </a>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         KHU VỰC ẢNH: KHOẢNH KHẮC ĐẸP (POLAROID GALLERY)
+         ======================================================== -->
+    <section class="gallery-section" id="gallery-section" aria-label="Album ảnh khoảnh khắc đẹp">
+      <div class="gallery-header">
+        <div class="gallery-tag">🌸 ALBUM KỶ NIỆM</div>
+        <h2 class="gallery-title">Khoảnh Khắc Rạng Rỡ</h2>
+        <p class="gallery-subtitle">Mỗi nụ cười của phái đẹp là một đóa hoa thơm ngát tỏa sáng giữa cuộc đời</p>
+      </div>
+
+      <!-- Lưới ảnh Polaroid được render động từ script.js -->
+      <div class="photo-grid" id="photo-grid" role="region" aria-live="polite">
+        <!-- JS sẽ chèn các thẻ polaroid hoặc thẻ minh họa nếu chưa có ảnh -->
+      </div>
+
+      <div class="gallery-tip">
+        <small>💡 Mẹo: Bấm vào từng bức ảnh để phóng to và chiêm ngưỡng trọn vẹn vẻ đẹp nhé!</small>
+      </div>
+    </section>
+
+    <!-- Footer ấm áp -->
+    <footer class="page-footer">
+      <p>Thiệp Chúc Mừng 20/10 • Ngày Phụ Nữ Việt Nam 🇻🇳</p>
+      <p class="footer-love">Tạo với tình cảm chân thành và sự trân quý đong đầy 💖</p>
+    </footer>
+
+  </main>
+
+
+  <!-- ========================================================
+       MODAL LIGHTBOX XEM ẢNH LỚN
+       ======================================================== -->
+  <div id="lightbox-modal" class="lightbox-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Xem ảnh kích thước lớn">
+    <div class="lightbox-overlay" id="lightbox-overlay"></div>
+    <div class="lightbox-content">
+      <button class="lightbox-btn lightbox-close" id="lightbox-close" aria-label="Đóng xem ảnh (Esc)">✕</button>
+      <button class="lightbox-btn lightbox-prev" id="lightbox-prev" aria-label="Ảnh trước (Mũi tên trái)">‹</button>
+      <button class="lightbox-btn lightbox-next" id="lightbox-next" aria-label="Ảnh kế tiếp (Mũi tên phải)">›</button>
+      
+      <div class="lightbox-media-wrapper">
+        <img id="lightbox-img" src="" alt="Ảnh phóng to" class="lightbox-img">
+        <div class="lightbox-caption" id="lightbox-caption"></div>
+        <div class="lightbox-counter" id="lightbox-counter">1 / 1</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       MODAL TẠO LINK CHIA SẺ CÁ NHÂN HÓA
+       ======================================================== -->
+  <div id="share-modal" class="share-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Tạo link chúc mừng cá nhân">
+    <div class="share-modal-backdrop" id="share-modal-backdrop"></div>
+    <div class="share-modal-box">
+      <button class="share-modal-close" id="share-modal-close" aria-label="Đóng">✕</button>
+      <div class="share-modal-header">
+        <span class="share-modal-icon">💌</span>
+        <h3>Cá Nhân Hóa Lời Chúc</h3>
+        <p>Nhập tên người nhận để tạo link riêng gửi qua Zalo, Messenger, Facebook!</p>
+      </div>
+      <div class="share-form">
+        <div class="form-group">
+          <label for="input-recipient">Tên người nhận (ví dụ: Chị Mai, Mẹ Yêu, Em Linh):</label>
+          <input type="text" id="input-recipient" placeholder="Ví dụ: Chị Lan, Mẹ, Em Hương..." maxlength="40">
+        </div>
+        <div class="form-group">
+          <label for="input-sender">Tên người / tập thể gửi (tùy chọn):</label>
+          <input type="text" id="input-sender" placeholder="Ví dụ: Hoàng Long, Phòng Kế Toán..." maxlength="40">
+        </div>
+        <div class="form-group">
+          <label for="output-share-url">Đường link thiệp cá nhân của bạn:</label>
+          <div class="share-url-container">
+            <input type="text" id="output-share-url" readonly>
+            <button id="btn-copy-link" class="btn-copy" aria-label="Sao chép đường link">Sao Chép</button>
+          </div>
+        </div>
+        <p id="copy-toast" class="copy-toast" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================
+       NÚT ĐIỀU KHIỂN NHẠC NỀN (NỔI Ở GÓC DƯỚI PHẢI)
+       (Nếu không có file audio/music.mp3 sẽ tự ẩn, không lỗi)
+       ======================================================== -->
+  <div id="music-control" class="music-control" style="display: none;">
+    <button id="btn-music-toggle" class="btn-music-toggle" aria-label="Bật / Tắt nhạc nền 20/10" title="Bật / Tắt nhạc">
+      <span class="music-disc-waves" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </span>
+      <span class="music-icon" id="music-icon">🎵</span>
+    </button>
+  </div>
+
+  <!-- Audio Element ẩn -->
+  <audio id="bg-audio" preload="auto" loop></audio>
+
+  <!-- Script điều khiển -->
+  <script src="script.js"></script>
+</body>
+</html>
