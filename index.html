@@ -210,19 +210,20 @@
       <!-- Cánh hoa trang trí lơ lửng quanh thiệp -->
       <div class="envelope-glow-aura" aria-hidden="true"></div>
 
-      <div class="envelope-wrapper">
-        <div class="envelope-flap" aria-hidden="true"></div>
-        <div class="envelope-pocket">
-          <!-- Tấm thiệp nhô ra nhẹ -->
-          <div class="letter-preview" aria-hidden="true">
-            <span class="letter-preview-heart">🌸</span>
-            <span class="letter-preview-text">Gửi người phụ nữ tuyệt vời</span>
-          </div>
-          <div class="envelope-seal">
-            <div class="seal-inner">
-              <span class="seal-icon">✨</span>
-              <span class="seal-text">20·10</span>
-            </div>
+      <!-- Thứ tự lớp khi đóng: mặt sau < thiệp < mặt trước < nắp < con dấu.
+           Khi mở: nắp lật ra sau, thiệp trượt lên trên cùng. -->
+      <div class="envelope-wrapper" aria-hidden="true">
+        <div class="envelope-back"></div>
+        <div class="letter-preview">
+          <span class="letter-preview-heart">🌸</span>
+          <span class="letter-preview-text">Gửi người phụ nữ tuyệt vời</span>
+        </div>
+        <div class="envelope-front"></div>
+        <div class="envelope-flap"></div>
+        <div class="envelope-seal">
+          <div class="seal-inner">
+            <span class="seal-icon">✨</span>
+            <span class="seal-text">20·10</span>
           </div>
         </div>
       </div>

@@ -598,6 +598,7 @@ function setupEnvelopeIntro(musicManager) {
     }
 
     // 3. Mờ phong bì và kích hoạt giao diện chính
+    //    (đợi nắp lật + thiệp trượt ra xong: hoạt ảnh letter-rise kết thúc ở ~1.2s)
     setTimeout(() => {
       overlay.classList.add('hide-envelope');
       document.body.classList.add('card-opened');
@@ -606,17 +607,17 @@ function setupEnvelopeIntro(musicManager) {
       if (interactiveEngine) {
         interactiveEngine.burst(window.innerWidth / 2, window.innerHeight * 0.4);
       }
-    }, 550);
+    }, 1300);
 
     // Xóa khỏi DOM sau khi chuyển cảnh xong
     setTimeout(() => {
       overlay.style.display = 'none';
       const mainContent = document.getElementById('main-content');
       if (mainContent) mainContent.focus();
-    }, 1400);
+    }, 2150);
   }
 
-  openBtn.addEventListener('click', openCard);
+  openBtn.addEventListener('click', openCard, { once: true });
 }
 
 

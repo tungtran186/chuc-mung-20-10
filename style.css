@@ -256,42 +256,66 @@ body.card-opened .corner-mid-left {
   animation: pulse-glow 3s infinite alternate;
 }
 
+/* Phong bì: 4 lớp màu đặc chồng lên nhau trong cùng một khung.
+   Mặt trước che toàn bộ trừ khe chữ V phía trên, nắp phủ khít đúng khe đó
+   -> khi đóng, tấm thiệp bị che kín hoàn toàn. */
 .envelope-wrapper {
+  --env-w: min(78vw, 320px);
+  --env-h: calc(var(--env-w) * 0.6);
+  --env-side: 22%;   /* Chiều cao mép bên của mặt trước / nắp */
+  --env-tip: 62%;    /* Đỉnh nhọn của nắp (tính theo chiều cao phong bì) */
   position: relative;
-  width: min(80vw, 320px);
-  height: clamp(170px, 46vw, 210px);
+  width: var(--env-w);
+  height: var(--env-h);
+  /* Chừa khoảng trống phía trên cho nắp lật lên và thiệp trượt ra */
+  margin-top: calc(var(--env-h) * 0.55);
   margin-bottom: clamp(16px, 4vh, 26px);
   perspective: 900px;
+  filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.5));
 }
 
-.envelope-pocket {
+.envelope-back,
+.envelope-front,
+.envelope-flap {
   position: absolute;
-  bottom: 0;
+  left: 0;
   width: 100%;
-  height: clamp(140px, 40vw, 180px);
-  background: linear-gradient(135deg, #2f4350 0%, #20313c 100%);
-  border-radius: 12px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 0 0 1px rgba(255, 182, 193, 0.3);
-  overflow: visible;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+}
+
+.envelope-back {
+  z-index: 1;
+  top: 0;
+  height: 100%;
+  background: #16222a;
+  border-radius: 10px;
+}
+
+.envelope-front {
+  z-index: 3;
+  top: 0;
+  height: 100%;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, transparent 45%),
+    linear-gradient(180deg, #2a3d4a 0%, #1f2f39 100%);
+  border-radius: 0 0 10px 10px;
+  clip-path: polygon(0 var(--env-side), 50% 60%, 100% var(--env-side), 100% 100%, 0 100%);
 }
 
 .letter-preview {
   position: absolute;
-  top: -24px;
-  width: 86%;
-  height: clamp(90px, 25vw, 120px);
+  z-index: 2;
+  top: 8px;
+  left: 6%;
+  width: 88%;
+  height: calc(100% - 16px);
   background: #fffdf9;
-  border-radius: 8px 8px 4px 4px;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding-top: 12px;
-  transition: transform 0.6s var(--ease-spring);
+  padding: 12px 8px 0;
   color: #333;
 }
 
@@ -315,19 +339,21 @@ body.card-opened .corner-mid-left {
 }
 
 .envelope-seal {
+  --seal-size: clamp(56px, 15vw, 68px);
   position: absolute;
-  top: clamp(28px, 8vw, 36px);
-  width: clamp(56px, 15vw, 68px);
-  height: clamp(56px, 15vw, 68px);
+  /* Đặt tâm con dấu ngay đỉnh nhọn của nắp */
+  top: calc(var(--env-tip) - var(--seal-size) / 2);
+  left: calc(50% - var(--seal-size) / 2);
+  width: var(--seal-size);
+  height: var(--seal-size);
   background: radial-gradient(circle, #ffbe3b 0%, #e8596f 65%, #c8324f 100%);
   border-radius: 50%;
   box-shadow: 0 6px 18px rgba(232, 89, 111, 0.65), 0 0 0 3px rgba(255, 255, 255, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   z-index: 5;
-  transition: transform 0.3s var(--ease-spring);
+  transition: transform 0.3s ease, opacity 0.25s ease;
 }
 
 .seal-inner {
@@ -342,20 +368,41 @@ body.card-opened .corner-mid-left {
 .seal-text { font-size: 0.72rem; font-weight: 800; letter-spacing: 1px; }
 
 .envelope-flap {
-  position: absolute;
-  top: clamp(20px, 6vw, 30px);
-  left: 0;
-  width: 100%;
-  height: clamp(75px, 22vw, 100px);
-  background: linear-gradient(180deg, #384f5f 0%, #293b46 100%);
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
-  transform-origin: top center;
-  transition: transform 0.6s ease;
   z-index: 4;
+  top: 0;
+  height: var(--env-tip);
+  background: linear-gradient(180deg, #4a6478 0%, #3a5163 100%);
+  border-radius: 10px 10px 0 0;
+  /* Mép bên thẳng xuống bằng mặt trước rồi vuốt nhọn về giữa -> phủ kín khe chữ V */
+  clip-path: polygon(0 0, 100% 0, 100% calc(var(--env-side) / 0.62), 50% 100%, 0 calc(var(--env-side) / 0.62));
+  transform-origin: top center;
+  /* Đổi lớp ra sau thiệp đúng lúc nắp dựng đứng (nửa thời gian lật) */
+  transition: transform 0.45s ease-in-out, z-index 0s linear 0.22s;
 }
 
-.envelope-wrapper.open-anim .envelope-flap { transform: rotateX(180deg); }
-.envelope-wrapper.open-anim .letter-preview { transform: translateY(-50px); }
+/* --- Khi mở --- */
+.envelope-wrapper.open-anim .envelope-flap {
+  transform: rotateX(180deg);
+  z-index: 0;
+}
+
+.envelope-wrapper.open-anim .envelope-seal {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+/* Thiệp trượt lên (vẫn sau mặt trước) cho đến khi ra khỏi phong bì hẳn,
+   lúc đó mới chuyển lên lớp trên cùng rồi hạ nhẹ xuống -> không bị "nhảy" lớp */
+.envelope-wrapper.open-anim .letter-preview {
+  animation: letter-rise 0.9s cubic-bezier(0.33, 1, 0.68, 1) 0.3s both;
+}
+
+@keyframes letter-rise {
+  0%   { transform: translateY(0);    z-index: 2; }
+  65%  { transform: translateY(-88%); z-index: 2; }
+  66%  { transform: translateY(-88%); z-index: 6; }
+  100% { transform: translateY(-62%); z-index: 6; }
+}
 
 .envelope-caption {
   font-size: clamp(0.92rem, 3.5vw, 1.05rem);
@@ -363,6 +410,7 @@ body.card-opened .corner-mid-left {
   margin-bottom: clamp(14px, 3vh, 20px);
   opacity: 0.95;
   font-weight: 500;
+  text-wrap: balance; /* Chia đều 2 dòng, tránh rớt 1 từ lẻ xuống dòng */
 }
 
 .btn-open-card {
@@ -375,17 +423,33 @@ body.card-opened .corner-mid-left {
   border: none;
   border-radius: 50px;
   min-height: 48px;
-  padding: 14px 34px;
-  font-size: clamp(1rem, 4vw, 1.15rem);
+  padding: 14px clamp(18px, 6vw, 34px);
+  font-size: clamp(0.95rem, 4.3vw, 1.12rem);
   font-weight: 700;
   font-family: var(--font-body);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   box-shadow: 0 10px 28px rgba(255, 82, 119, 0.45), 0 0 0 2px rgba(255, 255, 255, 0.25);
   transition: all 0.35s var(--ease-spring);
   position: relative;
   overflow: hidden;
-  width: min(88vw, 320px);
+  width: auto;
+  min-width: min(100%, 300px);
+  max-width: 100%;
+}
+
+.btn-open-card .btn-icon,
+.btn-open-card .btn-sparkle {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+/* Màn hình rất hẹp: bỏ icon trang trí bên phải để chữ đủ chỗ trên 1 dòng */
+@media (max-width: 379px) {
+  .btn-open-card .btn-sparkle { display: none; }
 }
 
 .btn-open-card:hover {
@@ -411,6 +475,7 @@ body.card-opened .corner-mid-left {
   font-size: clamp(0.76rem, 2.6vw, 0.85rem);
   color: var(--color-text-dim);
   margin-top: clamp(10px, 2vh, 16px);
+  text-wrap: balance;
 }
 
 /* --- 6. PHẦN THIỆP CHÍNH (HERO CARD) --- */
@@ -512,6 +577,7 @@ body.card-opened .hero-actions { transition-delay: 1.75s; }
   background: linear-gradient(120deg, #ffffff 0%, #fff4e0 40%, #ffd494 60%, #ffffff 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shine-text 5s linear infinite;
 }
